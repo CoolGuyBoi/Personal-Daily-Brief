@@ -5,7 +5,7 @@ const SOURCES = [
   { url: 'https://finshots.in/archive/rss/', type: 'Finance' },
   { url: 'https://hnrss.org/best', type: 'Tech' },
   { url: 'https://collabfund.com/blog/feed.xml', type: 'Strategy' },
-  { url: 'https://fs.blog/feed/', type: 'Mental Models' }
+  { url: 'https://pulse.zerodha.com/feed.php', type: 'Markets' }
 ];
 
 async function getData() {
@@ -15,7 +15,8 @@ async function getData() {
   const promises = SOURCES.map(async (s) => {
     try {
       const feed = await parser.parseURL(s.url);
-      return feed.items.slice(0, 3).map(i => `[${s.type}] ${i.title}: ${i.contentSnippet?.substring(0, 400)}`).join("\n");
+      // We take more data now to feed the deeper analysis
+      return feed.items.slice(0, 4).map(i => `[${s.type}] ${i.title}: ${i.contentSnippet?.substring(0, 800)}`).join("\n");
     } catch (e) { return ""; }
   });
   
@@ -25,32 +26,26 @@ async function getData() {
   const groq = new Groq({ apiKey: apiKey });
   
   const prompt = `
-    ROLE: Executive Editor of a premium financial journal.
-    AUDIENCE: A highly ambitious 19-year-old student (South Indian, CA Intermediate candidate, marathon runner).
-    TONE: Articulate, authoritative, and analytical. Avoid clichés.
+    ROLE: Senior Managing Partner at a global consulting firm (McKinsey/Bain).
+    AUDIENCE: A 19-year-old CA Inter student with elite ambitions, a marathoner's discipline, and a deep interest in Indian capital markets.
+    TONE: Sophisticated, ruthless in logic, articulate, and academic yet practical.
     
-    INSTRUCTIONS:
-    1. TECH/STRATEGY: Select 3 items. Write 80-120 words per item. Focus on second-order implications (e.g., How does this impact the unit economics of the sector?).
-    2. FINANCE/ECONOMY: Select 3 items. Connect these to Indian regulatory frameworks (RBI/SEBI) or CA principles (Audit/Law/Tax) where possible. 
-    3. THE DEEP CASE STUDY: A 500-word sophisticated essay. Theme: Either a legendary capital allocation masterclass, a startup's structural failure, or a Hindu philosophical study on 'Tapas' (disciplined heat) applied to modern ambition.
-    4. QUOTE: A sharp, disciplined maxim.
+    TASK:
+    1. TECH/STRATEGY (3 items): Provide 200 words each. Analyze the 'Unit Economics' and 'Competitive Moat'. 
+    2. FINANCE/MACRO (3 items): Provide 200 words each. Explicitly link to CA Inter topics (Company Law, Audit Standards, or Income Tax Act).
+    3. THE MASTERCLASS CASE STUDY (1000+ words): A definitive essay. 
+       - Structure: (I) The Strategic Impasse, (II) Financial Dissection, (III) The Consulting Pivot, (IV) The Endurance Mindset (linked to Tapas/Dharma).
+       - Content: Provide "insider" level viewpoints on capital allocation and structural risk.
+    4. THE MAXIM: A cold-blooded insight on discipline.
 
-    JSON FORMAT ONLY:
-    {
-      "tech": [{"h": "headline", "i": "analysis"}],
-      "finance": [{"h": "headline", "i": "analysis"}],
-      "case_study": {"title": "title", "text": "content_essay"},
-      "quote": "text"
-    }
-    
-    DATA:
-    ${allText}
+    FORMAT: Return STRICT JSON. Ensure the "case_study.text" is exceptionally long and detailed.
   `;
 
   const completion = await groq.chat.completions.create({
     messages: [{ role: 'user', content: prompt }],
     model: 'llama-3.3-70b-versatile',
-    temperature: 0.4, 
+    temperature: 0.45, // Balanced for precision and narrative flow
+    max_tokens: 6000, 
     response_format: { type: 'json_object' }
   });
 
@@ -60,68 +55,12 @@ async function getData() {
 export default async function Page() {
   try {
     const data = await getData();
-    const date = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const date = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
     return (
-      <div style={{ fontFamily: '"Times New Roman", Times, serif', padding: '25px', maxWidth: '600px', margin: '0 auto', background: '#fffcf5', color: '#1a1a1a', lineHeight: '1.7' }}>
+      <div style={{ fontFamily: 'charter, Georgia, serif', padding: '40px 24px', maxWidth: '700px', margin: '0 auto', background: '#fff', color: '#111', lineHeight: '1.8' }}>
         
-        {/* Header Section */}
-        <header style={{ borderBottom: '2px solid #1a1a1a', marginBottom: '30px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 5px 0', letterSpacing: '-1px' }}>INTELLIGENCE</h1>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold', paddingBottom: '5px' }}>
-            <span>VOL. I • NO. {new Date().getDate()}</span>
-            <span>{date}</span>
-          </div>
-        </header>
-
-        {/* The Maxim */}
-        <blockquote style={{ margin: '0 0 40px 0', padding: '20px', borderTop: '1px solid #eee', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-          <p style={{ fontSize: '20px', fontStyle: 'italic', margin: 0 }}>"{data.quote}"</p>
-        </blockquote>
-
-        {/* Content Body */}
-        <main>
-          <section style={{ marginBottom: '45px' }}>
-            <h2 style={{ fontSize: '14px', textTransform: 'uppercase', borderBottom: '2px solid #1a1a1a', display: 'inline-block', marginBottom: '20px', letterSpacing: '1px' }}>Technological Shifts</h2>
-            {data.tech.map((item, i) => (
-              <article key={i} style={{ marginBottom: '30px' }}>
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '10px', lineHeight: '1.2' }}>{item.h}</h3>
-                <p style={{ fontSize: '16px', color: '#333' }}>{item.i}</p>
-              </article>
-            ))}
-          </section>
-
-          <section style={{ marginBottom: '45px' }}>
-            <h2 style={{ fontSize: '14px', textTransform: 'uppercase', borderBottom: '2px solid #1a1a1a', display: 'inline-block', marginBottom: '20px', letterSpacing: '1px' }}>Financial Architecture</h2>
-            {data.finance.map((item, i) => (
-              <article key={i} style={{ marginBottom: '30px' }}>
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '10px', lineHeight: '1.2' }}>{item.h}</h3>
-                <p style={{ fontSize: '16px', color: '#333' }}>{item.i}</p>
-              </article>
-            ))}
-          </section>
-
-          {/* Featured Case Study */}
-          <section style={{ background: '#1a1a1a', color: '#fffcf5', padding: '30px', marginTop: '50px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: '#d4af37' }}>The Deep Analysis</span>
-            <h2 style={{ fontSize: '28px', fontWeight: 'bold', margin: '10px 0 20px 0', lineHeight: '1.1' }}>{data.case_study.title}</h2>
-            <div style={{ fontSize: '16px', lineHeight: '1.8', opacity: '0.95', whiteSpace: 'pre-wrap' }}>
-              {data.case_study.text}
-            </div>
-          </section>
-        </main>
-
-        <footer style={{ marginTop: '60px', textAlign: 'center', fontSize: '12px', color: '#777', borderTop: '1px solid #ddd', paddingTop: '20px' }}>
-          RESTRICTED CIRCULATION • OPTIMIZED FOR CA INTER PREPARATION
-        </footer>
-      </div>
-    );
-  } catch (e) {
-    return (
-      <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'serif' }}>
-        <h2>Refining the Morning Brief...</h2>
-        <p>The editor is finalizing today's insights. Please refresh in 60 seconds.</p>
-      </div>
-    );
-  }
-}
+        <header style={{ borderBottom: '3px solid #000', marginBottom: '50px', paddingBottom: '10px' }}>
+          <div style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '3px', marginBottom: '10px', color: '#666' }}>Intelligence Briefing</div>
+          <h1 style={{ fontSize: '48px', fontWeight: '900', margin: '0', letterSpacing: '-2px', lineHeight: '0.9' }}>The 10:45 Edition</h1>
+          <div style={{
