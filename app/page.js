@@ -51,9 +51,22 @@ export default async function Page() {
   let data;
   try {
     data = await getData();
-  } catch (e) {
-    return <div>System Offline: Check API Keys.</div>;
+ } catch (e) {
+    console.error(e); 
+    return (
+      <div style={{ padding: '20px', fontFamily: 'sans-serif', background: '#fff' }}>
+        <h1 style={{ color: '#b91c1c', fontSize: '20px' }}>System Diagnosis</h1>
+        <div style={{ background: '#fee2e2', padding: '15px', borderRadius: '5px', marginTop: '10px' }}>
+          <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>Error Message:</p>
+          <code style={{ fontSize: '13px', color: '#7f1d1d' }}>{e.message}</code>
+        </div>
+        <p style={{ fontSize: '14px', marginTop: '15px', color: '#444' }}>
+          <strong>Next Step:</strong> Refresh the page. If the error says "401", your Groq API key is wrong. If it says "fetch failed", one of the news websites is down.
+        </p>
+      </div>
+    );
   }
+} // This last curly bracket must remain!
 
   const date = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
 
